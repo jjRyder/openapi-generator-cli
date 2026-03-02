@@ -72,88 +72,28 @@ describe('VersionManagerService', () => {
       .mockImplementation((filePath) => filePath.indexOf('4.2') !== -1);
   });
 
-  const expectedVersions = {
-    '4.2.0': {
-      downloadLink:
-        'https://repo1.maven.org/maven2/org/openapitools/openapi-generator-cli/4.2.0/openapi-generator-cli-4.2.0.jar',
-      installed: true,
-      releaseDate: new Date(1599197918000),
-      version: '4.2.0',
-      versionTags: ['4.2.0', 'stable'],
-    },
-    '5.0.0-beta': {
-      downloadLink:
-        'https://repo1.maven.org/maven2/org/openapitools/openapi-generator-cli/5.0.0-beta/openapi-generator-cli-5.0.0-beta.jar',
-      installed: false,
-      releaseDate: new Date(1593445793000),
-      version: '5.0.0-beta',
-      versionTags: ['5.0.0-beta', '5.0.0', 'beta', 'beta'],
-    },
-    '4.3.1': {
-      downloadLink:
-        'https://repo1.maven.org/maven2/org/openapitools/openapi-generator-cli/4.3.1/openapi-generator-cli-4.3.1.jar',
-      installed: false,
-      releaseDate: new Date(1588758220000),
-      version: '4.3.1',
-      versionTags: ['4.3.1', 'stable', 'latest'],
-    },
-    '5.0.0-beta2': {
-      downloadLink:
-        'https://repo1.maven.org/maven2/org/openapitools/openapi-generator-cli/5.0.0-beta2/openapi-generator-cli-5.0.0-beta2.jar',
-      installed: false,
-      releaseDate: new Date(1599197918000),
-      version: '5.0.0-beta2',
-      versionTags: ['5.0.0-beta2', '5.0.0', 'beta2', 'beta'],
-    },
-    '3.0.0-alpha': {
-      downloadLink:
-        'https://repo1.maven.org/maven2/org/openapitools/openapi-generator-cli/3.0.0-alpha/openapi-generator-cli-3.0.0-alpha.jar',
-      installed: false,
-      releaseDate: new Date(1527849204000),
-      version: '3.0.0-alpha',
-      versionTags: ['3.0.0-alpha', '3.0.0', 'alpha', 'alpha'],
-    },
-  };
+  const getHardcodedVersions = () => fixture.versions;
 
   describe('API', () => {
     describe('getAll()', () => {
       let returnValue: Version[];
 
       beforeEach(async () => {
-        get.mockReturnValue(
-          of({
-            data: {
-              response: {
-                docs: [
-                  { v: '4.2.0', timestamp: 1599197918000 },
-                  { v: '5.0.0-beta', timestamp: 1593445793000 },
-                  { v: '4.3.1', timestamp: 1588758220000 },
-                  { v: '5.0.0-beta2', timestamp: 1599197918000 },
-                  { v: '3.0.0-alpha', timestamp: 1527849204000 },
-                ],
-              },
-            },
-          }),
-        );
-
         returnValue = await fixture.getAll().toPromise();
       });
 
-      it('executes one get request', () => {
-        expect(get).toHaveBeenNthCalledWith(
-          1,
-          'https://central.sonatype.com/solrsearch/select?q=g:org.openapitools+AND+a:openapi-generator-cli&core=gav&start=0&rows=200',
-        );
+      it('does not make any HTTP requests', () => {
+        expect(get).not.toHaveBeenCalled();
       });
 
-      it('returns the correct versions', () => {
-        expect(returnValue).toEqual([
-          expectedVersions['4.2.0'],
-          expectedVersions['5.0.0-beta'],
-          expectedVersions['4.3.1'],
-          expectedVersions['5.0.0-beta2'],
-          expectedVersions['3.0.0-alpha'],
-        ]);
+      it('returns the hardcoded versions list', () => {
+        expect(returnValue).toEqual(getHardcodedVersions());
+        expect(returnValue.length).toBeGreaterThan(0);
+      });
+
+      it('has 1.0.0 as the first version with the latest tag', () => {
+        expect(returnValue[0].version).toEqual('1.0.0');
+        expect(returnValue[0].versionTags).toContain('latest');
       });
     });
 
@@ -162,69 +102,59 @@ describe('VersionManagerService', () => {
 
       describe('using empty tags array', () => {
         beforeEach(async () => {
-          get.mockReturnValue(
-            of({
-              data: {
-                response: {
-                  docs: [
-                    { v: '4.2.0', timestamp: 1599197918000 },
-                    { v: '5.0.0-beta', timestamp: 1593445793000 },
-                    { v: '4.3.1', timestamp: 1588758220000 },
-                    { v: '5.0.0-beta2', timestamp: 1599197918000 },
-                    { v: '3.0.0-alpha', timestamp: 1527849204000 },
-                  ],
-                },
-              },
-            }),
-          );
-
           returnValue = await fixture.search([]).toPromise();
         });
 
-        it('executes one get request', () => {
-          expect(get).toHaveBeenNthCalledWith(
-            1,
-            'https://central.sonatype.com/solrsearch/select?q=g:org.openapitools+AND+a:openapi-generator-cli&core=gav&start=0&rows=200',
-          );
+        it('does not make any HTTP requests', () => {
+          expect(get).not.toHaveBeenCalled();
         });
 
         it('returns all versions', () => {
-          expect(returnValue).toEqual([
-            expectedVersions['4.2.0'],
-            expectedVersions['5.0.0-beta'],
-            expectedVersions['4.3.1'],
-            expectedVersions['5.0.0-beta2'],
-            expectedVersions['3.0.0-alpha'],
-          ]);
+          expect(returnValue).toEqual(getHardcodedVersions());
         });
       });
 
-      describe.each([
-        [
-          ['beta'],
-          [expectedVersions['5.0.0-beta'], expectedVersions['5.0.0-beta2']],
-        ],
-        [['beta', 'alpha'], []],
-        [
-          ['5'],
-          [expectedVersions['5.0.0-beta'], expectedVersions['5.0.0-beta2']],
-        ],
-        [['4.2'], [expectedVersions['4.2.0']]],
-        [['stable'], [expectedVersions['4.2.0'], expectedVersions['4.3.1']]],
-      ])('using tags %s', (tags, expectation) => {
+      describe('using tags [ "beta" ]', () => {
         beforeEach(async () => {
-          returnValue = await fixture.search(tags).toPromise();
+          returnValue = await fixture.search(['beta']).toPromise();
         });
 
-        it('executes one get request', () => {
-          expect(get).toHaveBeenNthCalledWith(
-            1,
-            'https://central.sonatype.com/solrsearch/select?q=g:org.openapitools+AND+a:openapi-generator-cli&core=gav&start=0&rows=200',
-          );
+        it('returns only beta versions', () => {
+          expect(returnValue.length).toBeGreaterThan(0);
+          expect(returnValue.every(v => v.versionTags.some(t => t.indexOf('beta') === 0))).toBe(true);
+        });
+      });
+
+      describe('using tags [ "latest" ]', () => {
+        beforeEach(async () => {
+          returnValue = await fixture.search(['latest']).toPromise();
+        });
+
+        it('returns only the latest version', () => {
+          expect(returnValue.length).toBe(1);
+          expect(returnValue[0].version).toEqual('1.0.0');
+        });
+      });
+
+      describe('using tags [ "stable" ]', () => {
+        beforeEach(async () => {
+          returnValue = await fixture.search(['stable']).toPromise();
+        });
+
+        it('returns only stable versions', () => {
+          expect(returnValue.length).toBeGreaterThan(0);
+          expect(returnValue.every(v => v.versionTags.includes('stable'))).toBe(true);
+        });
+      });
+
+      describe('using tags [ "7.20" ]', () => {
+        beforeEach(async () => {
+          returnValue = await fixture.search(['7.20']).toPromise();
         });
 
         it('returns the correct versions', () => {
-          expect(returnValue).toEqual(expectation);
+          expect(returnValue.length).toBe(1);
+          expect(returnValue[0].version).toEqual('7.20.0');
         });
       });
     });

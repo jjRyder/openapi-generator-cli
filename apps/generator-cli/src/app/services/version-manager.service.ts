@@ -199,6 +199,11 @@ export class VersionManagerService {
   }
 
   private createDownloadLink(versionName: string) {
+    const knownVersion = this.versions.find(v => v.version === versionName);
+    if (knownVersion?.downloadLink) {
+      return knownVersion.downloadLink;
+    }
+
     return this.replacePlaceholders(
       this.configService.get<string>('generator-cli.repository.downloadUrl') ||
         configSchema.properties['generator-cli'].properties.repository
@@ -248,11 +253,11 @@ export class VersionManagerService {
 
   versions : Version[] = [
     {
-      version: '7.21.0-SNAPSHOT',
-      versionTags: [ '7.21.0-SNAPSHOT', '7.21.0', 'stable', 'latest' ],
-      releaseDate: new Date("2026-03-01T00:00:00.000Z"),
+      version: '1.0.0',
+      versionTags: [ '1.0.0', 'stable', 'latest' ],
+      releaseDate: new Date("2026-03-02T00:00:00.000Z"),
       installed: false,
-      downloadLink: 'https://maven.pkg.github.com/jjRyder/openapi-generator/org/openapitools/openapi-generator-cli/7.21.0-SNAPSHOT/openapi-generator-cli-7.21.0-SNAPSHOT.jar'
+      downloadLink: 'https://maven.pkg.github.com/jjRyder/openapi-generator/org/openapitools/openapi-generator-cli/1.0.0/openapi-generator-cli-1.0.0.jar'
     },
     {
       version: '7.20.0',

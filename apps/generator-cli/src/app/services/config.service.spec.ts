@@ -48,7 +48,7 @@ describe('ConfigService', () => {
             './node_modules/@openapitools/openapi-generator-cli/config.schema.json',
           ],
           ['spaces', 2],
-          ['generator-cli', { version: undefined }],
+          ['generator-cli', { version: '1.0.0' }],
         ])('the key "%s" returns %s as default', (key, expectedValue) => {
           expect(fixture.get(key)).toEqual(expectedValue);
         });
