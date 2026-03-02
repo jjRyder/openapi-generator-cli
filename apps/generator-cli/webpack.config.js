@@ -28,7 +28,7 @@ module.exports = composePlugins(
       bin: {
         'openapi-generator-cli': './main.js',
       },
-      files: ['config.schema.json', 'README.md', 'main.js'],
+      files: ['config.schema.json', 'README.md', 'main.js', 'versions'],
       dependencies: {
         'reflect-metadata': '',
         '@nuxtjs/opencollective': '',

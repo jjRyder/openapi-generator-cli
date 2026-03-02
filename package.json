@@ -1,6 +1,6 @@
 {
-  "name": "openapitools",
-  "version": "0.0.0-development",
+  "name": "jjRyder",
+  "version": "1.0.0",
   "license": "Apache-2.0",
   "private": false,
   "author": {
@@ -15,8 +15,8 @@
       "url": "https://www.kay-schecker.de"
     }
   ],
-  "homepage": "https://github.com/OpenAPITools/openapi-generator-cli",
-  "bugs": "https://github.com/OpenAPITools/openapi-generator-cli/issues",
+  "homepage": "https://github.com/jjRyder/openapi-generator-cli",
+  "bugs": "https://github.com/jjRyder/openapi-generator-cli/issues",
   "readme": "README.md",
   "funding": {
     "type": "opencollective",
@@ -24,10 +24,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/OpenAPITools/openapi-generator-cli.git"
+    "url": "git+https://github.com/jjRyder/openapi-generator-cli.git"
   },
   "publishConfig": {
-    "registry": "https://registry.npmjs.org"
+    "registry": "https://npm.pkg.github.com"
   },
   "keywords": [
     "rest-api",
@@ -51,7 +51,8 @@
     "start": "nx serve generator-cli",
     "cli": "node ./dist/apps/generator-cli/main.js",
     "build": "NODE_OPTIONS=--openssl-legacy-provider nx build generator-cli",
-    "publish": "npm run build && npm publish ./dist/apps/generator-cli",
+    "build:package": "npm run build && mkdir -p dist/apps/generator-cli/versions && cp ../openapi-generator/modules/openapi-generator-cli/target/openapi-generator-cli.jar dist/apps/generator-cli/versions/7.21.0-SNAPSHOT.jar",
+    "publish": "npm run build:package && npm publish ./dist/apps/generator-cli",
     "test": "nx test generator-cli",
     "lint": "nx lint generator-cli",
     "e2e": "nx e2e generator-cli",
@@ -135,5 +136,6 @@
     "type-fest": "5.4.4",
     "typescript": "5.9.3",
     "jest-util": "30.2.0"
-  }
+  },
+  "packageManager": "pnpm@10.30.0"
 }

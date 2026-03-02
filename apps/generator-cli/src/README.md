@@ -1,4 +1,42 @@
-# @openapitools/openapi-generator-cli
+# @jjRyder/openapi-generator-cli
+
+A fork of [@openapitools/openapi-generator-cli](https://github.com/OpenAPITools/openapi-generator-cli) that bundles a custom JAR from [jjRyder/openapi-generator](https://github.com/jjRyder/openapi-generator).
+
+## Fork Changes
+
+This fork extends the **typescript-fetch** generator with the following features:
+
+- **OneOf response support** — responses with `oneOf` schemas are deserialized as union types (`A | B | C`). Each candidate type is tried at runtime, with proper imports and serialization logic generated automatically.
+- **Structured error handling** — every response status code (both success and error) is handled explicitly. Non-2xx responses have their bodies deserialized (including oneOf) before throwing a `ResponseError` with access to both `response` and parsed `body`.
+- **`onErrorResponse` callback** — a centralized hook in `ConfigurationParameters` that is called for all error responses, enabling global error handling (e.g. toasts, logging, i18n) in a single place.
+
+## Build & Publish
+
+```bash
+cd openapi-generator-cli
+
+# 1. Install dependencies
+pnpm install
+
+# 2. Build the Java fork (if not already built)
+cd ../openapi-generator
+./mvnw -pl modules/openapi-generator-cli -am clean package -DskipTests
+
+# 3. Build the npm package (CLI + bundled JAR)
+cd ../openapi-generator-cli
+pnpm run build:package
+
+# 4. Configure auth for GitHub Packages
+echo "//npm.pkg.github.com/:_authToken=YOUR_TOKEN" >> ~/.npmrc
+
+# 5. Publish
+cd dist/apps/generator-cli
+npm publish
+```
+
+
+
+---
 
 [![Join the Slack chat room](https://img.shields.io/badge/Slack-Join%20the%20chat%20room-orange)](https://join.slack.com/t/openapi-generator/shared_invite/zt-12jxxd7p2-XUeQM~4pzsU9x~eGLQqX2g)
 

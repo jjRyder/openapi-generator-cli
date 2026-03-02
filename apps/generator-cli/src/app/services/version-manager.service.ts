@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
-import { catchError, map, switchMap } from 'rxjs/operators';
+import { map, switchMap } from 'rxjs/operators';
 import { Observable, of } from 'rxjs';
 import { AxiosError } from 'axios';
 import * as fs from 'fs-extra';
@@ -8,7 +8,6 @@ import * as path from 'path';
 import * as os from 'os';
 import * as Stream from 'stream';
 import chalk from 'chalk';
-import { compareVersions } from 'compare-versions';
 import { LOGGER } from '../constants';
 import { ConfigService } from './config.service';
 import * as configSchema from '../../config.schema.json';
@@ -57,48 +56,7 @@ export class VersionManagerService {
   }
 
   getAll(): Observable<Version[]> {
-    // bypass querying serach.maven.org and use default versions instead
-    if (process.env.OPENAPI_GENERATOR_CLI_SEARCH_URL === 'DEFAULT' ) {
-      return this.getObservableVersions();
-    }
-
-    const queryUrl = this.replacePlaceholders(
-      this.configService.get<string>('generator-cli.repository.queryUrl') ||
-        configSchema.properties['generator-cli'].properties.repository.queryUrl
-          .default
-    );
-
-    return this.httpService.get(queryUrl).pipe(
-      map(({ data }) => data.response.docs),
-      map((docs) =>
-        docs.map((doc) => ({
-          version: doc.v,
-          versionTags: [
-            ...(doc.v.match(/^[0-9]+\.[0-9]+\.[0-9]+$/)?.concat('stable') ||
-              []),
-            ...(doc.v.match(/(^[0-9]+\.[0-9]+\.[0-9]+)-(([a-z]+)[0-9]?)$/) ||
-              []),
-          ],
-          releaseDate: new Date(doc.timestamp),
-          installed: this.isDownloaded(doc.v),
-          downloadLink: this.createDownloadLink(doc.v),
-        }))
-      ),
-      map((versions) => {
-        const latestVersion = this.filterVersionsByTags(versions, ['stable'])
-          .sort((l, r) => compareVersions(l.version, r.version))
-          .pop();
-        latestVersion.versionTags.push('latest'); // works, because it's a reference
-        return versions;
-      }),
-      catchError((e) => {
-        this.logger.log(
-          chalk.red(`Unable to query repository, because of: "${e.message}". Return default versions instead.`)
-        );
-        this.printResponseError(e);
-        return this.getObservableVersions();
-      })
-    );
+    return this.getObservableVersions();
   }
 
   search(tags: string[]) {
@@ -290,8 +248,15 @@ export class VersionManagerService {
 
   versions : Version[] = [
     {
+      version: '7.21.0-SNAPSHOT',
+      versionTags: [ '7.21.0-SNAPSHOT', '7.21.0', 'stable', 'latest' ],
+      releaseDate: new Date("2026-03-01T00:00:00.000Z"),
+      installed: false,
+      downloadLink: 'https://maven.pkg.github.com/jjRyder/openapi-generator/org/openapitools/openapi-generator-cli/7.21.0-SNAPSHOT/openapi-generator-cli-7.21.0-SNAPSHOT.jar'
+    },
+    {
       version: '7.20.0',
-      versionTags: [ '7.20.0', 'stable', 'latest' ],
+      versionTags: [ '7.20.0', 'stable' ],
       releaseDate: new Date("2026-02-16T06:24:58.285Z"),
       installed: false,
       downloadLink: 'https://repo1.maven.org/maven2/org/openapitools/openapi-generator-cli/7.20.0/openapi-generator-cli-7.20.0.jar'
