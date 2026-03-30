@@ -15,6 +15,9 @@
       "url": "https://www.kay-schecker.de"
     }
   ],
+  "bin": {
+    "openapi-generator-cli": "main.js"
+  },
   "homepage": "https://github.com/jjRyder/openapi-generator-cli",
   "bugs": "https://github.com/jjRyder/openapi-generator-cli/issues",
   "readme": "README.md",
