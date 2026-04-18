@@ -1,6 +1,6 @@
 {
   "name": "jjRyder",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "license": "Apache-2.0",
   "private": false,
   "author": {
@@ -54,7 +54,7 @@
     "start": "nx serve generator-cli",
     "cli": "node ./dist/apps/generator-cli/main.js",
     "build": "NODE_OPTIONS=--openssl-legacy-provider nx build generator-cli --skip-nx-cache",
-    "build:package": "npm run build && mkdir -p dist/apps/generator-cli/versions && cp ../openapi-generator/modules/openapi-generator-cli/target/openapi-generator-cli.jar dist/apps/generator-cli/versions/1.0.0.jar",
+    "build:package": "npm run build && mkdir -p dist/apps/generator-cli/versions && cp ../openapi-generator/modules/openapi-generator-cli/target/openapi-generator-cli.jar dist/apps/generator-cli/versions/1.0.1.jar",
     "publish": "npm run build:package && npm publish ./dist/apps/generator-cli",
     "test": "nx test generator-cli",
     "lint": "nx lint generator-cli",

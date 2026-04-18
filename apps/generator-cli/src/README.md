@@ -2,7 +2,7 @@
 
 A fork of [@openapitools/openapi-generator-cli](https://github.com/OpenAPITools/openapi-generator-cli) that bundles a custom JAR from [jjRyder/openapi-generator](https://github.com/jjRyder/openapi-generator).
 
-The bundled JAR (`1.0.0`) is included directly in the npm package — no downloads from Maven Central at runtime.
+The bundled JAR  is included directly in the npm package — no downloads from Maven Central at runtime.
 
 ## What's different from the original
 
@@ -102,16 +102,12 @@ cd ../openapi-generator
 ./mvnw -pl modules/openapi-generator-cli -am clean package -DskipTests
 
 # 3. Build the npm package (CLI + bundled JAR)
+# Bump version
+# npm version patch   # or minor / major
 cd ../openapi-generator-cli
 pnpm run build:package
 
-# 4. Bump version
-npm version patch   # or minor / major
-
-# 5. Rebuild with new version
-pnpm run build:package
-
-# 6. Publish to GitHub Packages
+# 4. Publish to GitHub Packages
 cd dist/apps/generator-cli
 npm publish
 ```
@@ -130,7 +126,7 @@ The `openapitools.json` file supports generator presets for convenient multi-spe
       "backend-api": {
         "generatorName": "typescript-fetch",
         "output": "#{cwd}/lib/api-client/codegen",
-        "inputSpec": "http://localhost:5101/swagger/v1/swagger.json",
+        "inputSpec": "http://localhost:8080/swagger/v1/swagger.json",
         "additionalProperties": {
           "supportsES6": "true",
           "typescriptThreePlus": "true"

@@ -253,11 +253,11 @@ export class VersionManagerService {
 
   versions : Version[] = [
     {
-      version: '1.0.0',
-      versionTags: [ '1.0.0', 'stable', 'latest' ],
+      version: '1.0.1',
+      versionTags: [ '1', 'stable', 'latest' ],
       releaseDate: new Date("2026-03-02T00:00:00.000Z"),
       installed: false,
-      downloadLink: 'https://maven.pkg.github.com/jjRyder/openapi-generator/org/openapitools/openapi-generator-cli/1.0.0/openapi-generator-cli-1.0.0.jar'
+      downloadLink: ''
     },
     {
       version: '7.20.0',
