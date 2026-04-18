@@ -105,11 +105,9 @@ cd ../openapi-generator
 # Bump version
 # npm version patch   # or minor / major
 cd ../openapi-generator-cli
-pnpm run build:package
 
-# 4. Publish to GitHub Packages
-cd dist/apps/generator-cli
-npm publish
+# 4. Build and Publish to GitHub Packages
+pnpm run publish
 ```
 
 ## Configuration

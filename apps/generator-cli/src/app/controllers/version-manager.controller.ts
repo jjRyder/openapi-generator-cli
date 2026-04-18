@@ -56,16 +56,14 @@ export class VersionManagerController {
     const choices = [choice('exit')];
 
     if (!installed) {
-      choices.unshift(
-        choice('download', () => this.service.download(version), chalk.yellow),
-      );
+      this.logger.log(chalk.red(`Version ${version} is not available. Available versions must be bundled in the package.`));
     } else if (!isSelected) {
       choices.unshift(
         choice('remove', () => this.service.remove(version), chalk.red),
       );
     }
 
-    if (!isSelected) {
+    if (!isSelected && installed) {
       choices.unshift(
         choice(
           'use',

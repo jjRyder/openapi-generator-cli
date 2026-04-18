@@ -1,16 +1,12 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { HttpService } from '@nestjs/axios';
-import { map, switchMap } from 'rxjs/operators';
+import { map } from 'rxjs/operators';
 import { Observable, of } from 'rxjs';
-import { AxiosError } from 'axios';
 import * as fs from 'fs-extra';
 import * as path from 'path';
 import * as os from 'os';
-import * as Stream from 'stream';
 import chalk from 'chalk';
 import { LOGGER } from '../constants';
 import { ConfigService } from './config.service';
-import * as configSchema from '../../config.schema.json';
 import { spawn, spawnSync } from 'child_process';
 
 export interface Version {
@@ -20,12 +16,6 @@ export interface Version {
   installed: boolean;
   downloadLink: string;
 }
-
-const mvn = {
-  repo: 'https://central.sonatype.com',
-  groupId: 'org.openapitools',
-  artifactId: 'openapi-generator-cli',
-};
 
 @Injectable()
 export class VersionManagerService {
@@ -42,7 +32,6 @@ export class VersionManagerService {
 
   constructor(
     @Inject(LOGGER) private readonly logger: LOGGER,
-    private httpService: HttpService,
     private configService: ConfigService
   ) {
     // pre-process intsalled in versions
@@ -80,13 +69,13 @@ export class VersionManagerService {
   }
 
   async setSelectedVersion(versionName: string) {
-    const downloaded = await this.downloadIfNeeded(versionName);
-    if (downloaded) {
-      this.configService.set('generator-cli.version', versionName);
-      this.logger.log(
-        chalk.green(`Did set selected version to ${versionName}`)
-      );
+    if (!this.isDownloaded(versionName)) {
+      throw new Error(`Version ${versionName} is not available. Available versions must be bundled in the package.`);
     }
+    this.configService.set('generator-cli.version', versionName);
+    this.logger.log(
+      chalk.green(`Did set selected version to ${versionName}`)
+    );
   }
 
   async remove(versionName: string) {
@@ -105,72 +94,8 @@ export class VersionManagerService {
     this.logger.log(chalk.green(`Removed ${versionName}`));
   }
 
-  async download(versionName: string) {
-    this.logger.log(chalk.yellow(`Download ${versionName} ...`));
-
-    if (this.configService.useDocker) {
-      await new Promise<void>((resolve) => {
-        // Use single command string to avoid Node 24+ deprecation warning (DEP0190)
-        spawn(`docker pull ${this.getDockerImageName(versionName)}`, {
-          stdio: 'inherit',
-          shell: true,
-        }).on('exit', () => resolve());
-      });
-
-      this.logger.log(chalk.green(`Downloaded ${versionName}`));
-      return;
-    }
-
-    const downloadLink = this.createDownloadLink(versionName);
-    const filePath = this.filePath(versionName);
-
-    try {
-      await this.httpService
-        .get<Stream>(downloadLink, { responseType: 'stream' })
-        .pipe(
-          switchMap(
-            (res) =>
-              new Promise((resolve) => {
-                fs.ensureDirSync(this.storage);
-                const temporaryDirectory = fs.mkdtempSync(
-                  path.join(os.tmpdir(), 'generator-cli-')
-                );
-                const temporaryFilePath = path.join(
-                  temporaryDirectory,
-                  versionName
-                );
-                const file = fs.createWriteStream(temporaryFilePath);
-                res.data.pipe(file);
-                file.on('finish', () => {
-                  fs.moveSync(temporaryFilePath, filePath, { overwrite: true });
-                  resolve(true);
-                });
-              })
-          )
-        )
-        .toPromise();
-
-      if (this.customStorageDir) {
-        this.logger.log(
-          chalk.green(
-            `Downloaded ${versionName} to custom storage location ${this.storage}`
-          )
-        );
-      } else {
-        this.logger.log(chalk.green(`Downloaded ${versionName}`));
-      }
-
-      return true;
-    } catch (e) {
-      this.logger.log(chalk.red(`Download failed, because of: "${e.message}"`));
-      this.printResponseError(e);
-
-      return false;
-    }
-  }
-
   async downloadIfNeeded(versionName: string) {
-    return this.isDownloaded(versionName) || this.download(versionName);
+    return this.isDownloaded(versionName);
   }
 
   isDownloaded(versionName: string) {
@@ -196,55 +121,6 @@ export class VersionManagerService {
         return v.versionTags.some((vTag) => vTag.indexOf(tag) === 0);
       })
     );
-  }
-
-  private createDownloadLink(versionName: string) {
-    const knownVersion = this.versions.find(v => v.version === versionName);
-    if (knownVersion?.downloadLink) {
-      return knownVersion.downloadLink;
-    }
-
-    return this.replacePlaceholders(
-      this.configService.get<string>('generator-cli.repository.downloadUrl') ||
-        configSchema.properties['generator-cli'].properties.repository
-          .downloadUrl.default,
-      { versionName }
-    );
-  }
-
-  private replacePlaceholders(str: string, additionalPlaceholders = {}) {
-    const placeholders = {
-      ...additionalPlaceholders,
-      groupId: mvn.groupId.replace(/\./g, '/'),
-      artifactId: mvn.artifactId.replace(/\./g, '/'),
-      'group.id': mvn.groupId,
-      'artifact.id': mvn.artifactId,
-    };
-
-    for (const [k, v] of Object.entries(placeholders)) {
-      str = str.split(`$\{${k}}`).join(v);
-    }
-
-    return str;
-  }
-
-  private printResponseError(error: AxiosError) {
-    try {
-      if (error.isAxiosError) {
-        this.logger.log(chalk.red('\nResponse:'));
-        Object.entries(error.response.headers).forEach((a) =>
-          this.logger.log(...a)
-        );
-        this.logger.log();
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (error.response.data as any).on('data', (data) =>
-          this.logger.log(data.toString('utf8'))
-        );
-      }
-    } catch(e) {
-      // simply show the original error if the above code block fails
-      this.logger.log('Errors: ', error);
-    }
   }
 
   public filePath(versionName = this.getSelectedVersion()) {

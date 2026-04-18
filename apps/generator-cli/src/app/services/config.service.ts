@@ -34,7 +34,7 @@ export class ConfigService {
       './node_modules/@openapitools/openapi-generator-cli/config.schema.json',
     spaces: 2,
     'generator-cli': {
-      version: '1.0.0',
+      version: '1.0.1',
     },
   };
 

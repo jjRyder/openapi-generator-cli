@@ -73,7 +73,6 @@ export class AppModule implements OnApplicationBootstrap {
       selectedVersion = version;
     }
 
-    await this.versionManager.downloadIfNeeded(selectedVersion);
     await this.passThroughService.init();
     this.program.parse(process.argv);
   };

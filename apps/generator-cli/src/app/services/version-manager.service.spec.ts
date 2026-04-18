@@ -177,23 +177,15 @@ describe('VersionManagerService', () => {
     });
 
     describe('setSelectedVersion', () => {
-      let downloadIfNeeded: jest.SpyInstance;
-
       beforeEach(() => {
         log.mockReset();
         setVersion.mockReset();
       });
 
-      describe('was download or exists', () => {
+      describe('when version is available (downloaded)', () => {
         beforeEach(async () => {
-          downloadIfNeeded = jest
-            .spyOn(fixture, 'downloadIfNeeded')
-            .mockResolvedValue(true);
+          jest.spyOn(fixture, 'isDownloaded').mockReturnValue(true);
           await fixture.setSelectedVersion('1.2.3');
-        });
-
-        it('calls downloadIfNeeded once', () => {
-          expect(downloadIfNeeded).toHaveBeenNthCalledWith(1, '1.2.3');
         });
 
         it('sets the correct config value', () => {
@@ -212,24 +204,12 @@ describe('VersionManagerService', () => {
         });
       });
 
-      describe('was not downloaded nor exists', () => {
-        beforeEach(async () => {
-          downloadIfNeeded = jest
-            .spyOn(fixture, 'downloadIfNeeded')
-            .mockResolvedValue(false);
-          await fixture.setSelectedVersion('1.2.3');
-        });
-
-        it('calls downloadIfNeeded once', () => {
-          expect(downloadIfNeeded).toHaveBeenNthCalledWith(1, '1.2.3');
-        });
-
-        it('does not set the config value', () => {
-          expect(setVersion).toHaveBeenCalledTimes(0);
-        });
-
-        it('logs no success message', () => {
-          expect(log).toHaveBeenCalledTimes(0);
+      describe('when version is not available', () => {
+        it('throws an error', async () => {
+          jest.spyOn(fixture, 'isDownloaded').mockReturnValue(false);
+          await expect(fixture.setSelectedVersion('1.2.3')).rejects.toThrow(
+            'Version 1.2.3 is not available. Available versions must be bundled in the package.',
+          );
         });
       });
     });
@@ -266,214 +246,6 @@ describe('VersionManagerService', () => {
         expect(logMessages).toEqual({
           before: [],
           after: [chalk.green(`Removed 4.3.1`)],
-        });
-      });
-    });
-
-    describe('download()', () => {
-      let returnValue: boolean;
-
-      let logMessages = {
-        before: [],
-        after: [],
-      };
-
-      describe('the server responds with an error', () => {
-        beforeEach(async () => {
-          get.mockImplementation(() => {
-            log
-              .mockReset()
-              .mockImplementation((m) => logMessages.after.push(m));
-            throw new Error('HTTP 404 Not Found');
-          });
-
-          logMessages = {
-            before: [],
-            after: [],
-          };
-
-          log.mockReset().mockImplementation((m) => logMessages.before.push(m));
-          returnValue = await fixture.download('4.2.0');
-        });
-
-        it('returns false', () => {
-          expect(returnValue).toBeFalsy();
-        });
-
-        it('logs the correct messages', () => {
-          expect(logMessages).toEqual({
-            before: [chalk.yellow(`Download 4.2.0 ...`)],
-            after: [
-              chalk.red(`Download failed, because of: "HTTP 404 Not Found"`),
-            ],
-          });
-        });
-      });
-
-      describe('the server responds a file', () => {
-        const data = {
-          pipe: jest.fn(),
-        };
-
-        const file = {
-          on: jest.fn().mockImplementation((listener, res) => {
-            if (listener === 'finish') {
-              return res();
-            }
-          }),
-        };
-
-        beforeEach(async () => {
-          data.pipe.mockReset();
-          fs.mkdtempSync
-            .mockReset()
-            .mockReturnValue('/tmp/generator-cli-abcDEF');
-          fs.ensureDirSync.mockReset();
-          fs.createWriteStream.mockReset().mockReturnValue(file);
-
-          get.mockImplementation(() => {
-            log
-              .mockReset()
-              .mockImplementation((m) => logMessages.after.push(m));
-            return of({ data });
-          });
-
-          logMessages = {
-            before: [],
-            after: [],
-          };
-
-          log.mockReset().mockImplementation((m) => logMessages.before.push(m));
-          returnValue = await fixture.download('4.2.0');
-        });
-
-        it('returns true', () => {
-          expect(returnValue).toBeTruthy();
-        });
-
-        describe('logging', () => {
-          it('logs the correct messages', () => {
-            expect(logMessages).toEqual({
-              before: [chalk.yellow(`Download 4.2.0 ...`)],
-              after: [chalk.green(`Downloaded 4.2.0`)],
-            });
-          });
-
-          describe('there is a custom storage location', () => {
-            it.each([
-              ['/c/w/d/custom/dir', './custom/dir'],
-              ['/custom/dir', '/custom/dir'],
-            ])('returns %s for %s', async (expected, cfgValue) => {
-              getStorageDir.mockReturnValue(cfgValue);
-              logMessages = { before: [], after: [] };
-              log
-                .mockReset()
-                .mockImplementation((m) => logMessages.before.push(m));
-
-              await compile();
-              await fixture.download('4.2.0');
-              expect(logMessages).toEqual({
-                before: [chalk.yellow(`Download 4.2.0 ...`)],
-                after: [
-                  chalk.green(
-                    `Downloaded 4.2.0 to custom storage location ${expected}`,
-                  ),
-                ],
-              });
-            });
-          });
-        });
-
-        it('provides the correct params to get', () => {
-          expect(get).toHaveBeenNthCalledWith(
-            1,
-            'https://repo1.maven.org/maven2/org/openapitools/openapi-generator-cli/4.2.0/openapi-generator-cli-4.2.0.jar',
-            { responseType: 'stream' },
-          );
-        });
-
-        describe('file saving', () => {
-          it('ensures the save dir', () => {
-            expect(fs.ensureDirSync).toHaveBeenNthCalledWith(
-              1,
-              fixture.storage,
-            );
-          });
-
-          it('creates a temporary directory', () => {
-            expect(fs.mkdtempSync).toHaveBeenNthCalledWith(
-              1,
-              path.join(os.tmpdir(), 'generator-cli-'),
-            );
-          });
-
-          it('creates the correct write stream', () => {
-            expect(fs.createWriteStream).toHaveBeenNthCalledWith(
-              1,
-              '/tmp/generator-cli-abcDEF/4.2.0',
-            );
-          });
-
-          it('moves the file to the target location', () => {
-            expect(fs.moveSync).toHaveBeenNthCalledWith(
-              1,
-              '/tmp/generator-cli-abcDEF/4.2.0',
-              `${fixture.storage}/4.2.0.jar`,
-              { overwrite: true },
-            );
-          });
-
-          it('receives the data piped', () => {
-            expect(data.pipe).toHaveBeenNthCalledWith(1, file);
-          });
-        });
-      });
-    });
-
-    describe('downloadIfNeeded()', () => {
-      let downloadSpy: jest.SpyInstance;
-      let isDownloadedSpy: jest.SpyInstance;
-
-      beforeEach(() => {
-        isDownloadedSpy = jest.spyOn(fixture, 'isDownloaded').mockReset();
-        downloadSpy = jest.spyOn(fixture, 'download').mockReset();
-      });
-
-      describe('the version exists', () => {
-        let returnValue: boolean;
-
-        beforeEach(async () => {
-          isDownloadedSpy.mockReturnValueOnce(true);
-          returnValue = await fixture.downloadIfNeeded('4.2.0');
-        });
-
-        it('does not call download', () => {
-          expect(downloadSpy).toHaveBeenCalledTimes(0);
-        });
-
-        it('returns true', () => {
-          expect(returnValue).toBeTruthy();
-        });
-      });
-
-      describe('the version does not exists', () => {
-        beforeEach(async () => {
-          isDownloadedSpy.mockReturnValueOnce(false);
-          await fixture.downloadIfNeeded('4.2.0');
-        });
-
-        it('calls download once', () => {
-          expect(downloadSpy).toHaveBeenNthCalledWith(1, '4.2.0');
-        });
-
-        it('returns true, if download return true', async () => {
-          downloadSpy.mockReturnValueOnce(true);
-          expect(await fixture.downloadIfNeeded('4.2.0')).toBeTruthy();
-        });
-
-        it('returns true, if download return true', async () => {
-          downloadSpy.mockReturnValueOnce(false);
-          expect(await fixture.downloadIfNeeded('4.2.0')).toBeFalsy();
         });
       });
     });
