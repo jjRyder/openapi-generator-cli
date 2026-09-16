@@ -1,6 +1,6 @@
 {
   "name": "jjRyder",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "license": "Apache-2.0",
   "private": false,
   "author": {
@@ -94,7 +94,6 @@
     "fs-extra": "11.3.3",
     "glob": "13.x",
     "jsonpath": "1.2.1",
-    "proxy-agent": "^6.4.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
     "tslib": "^2.3.0"
